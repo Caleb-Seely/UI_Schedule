@@ -43,7 +43,7 @@ function show_sqldbs(){
 function show_table_list(){
    document.getElementById('tbl_list').style.display = 'block';
 
-   var e = document.getAnimations("sqldblist");
+   var e = document.getElementById("sqldblist");
    console.log(e);
    //var value = e.options[e.selectedIndex].value;
    var text = e.options[e.selectedIndex].text;

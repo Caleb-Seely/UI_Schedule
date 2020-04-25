@@ -1,5 +1,5 @@
 table, tr, th, td{
-   border: 1px solid clack;
+   border: 1px solid black;
 }
 
 h1, h2{
@@ -7,6 +7,10 @@ h1, h2{
    color: black;
    font-weight: 200;
    margin-top: 0;
+}
+
+h2{
+   margin-bottom: : 1em;
 }
 
 section { 
@@ -17,13 +21,16 @@ section {
    max-width: 700px; 
    border-radius: .5em; 
    color: white; 
-   img, p { padding: 1em;
+   img, p { 
+      padding: 1em;
    }
 }
-   .hide { display: none;
+   .hide { 
+      display: none;
    }
    
-   .none { display:none;
+   .none { 
+      display:none;
    }
    
    .block-of-text { 
@@ -51,7 +58,7 @@ section {
          background-color: #555;
       }
       .content { 
-         padding: 18px; 
+         padding: 0 18px; 
          max-height: 0; 
          overflow: hidden; 
          transition: max-height 0.2s ease-out; 

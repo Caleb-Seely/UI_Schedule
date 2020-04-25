@@ -55,7 +55,7 @@ if(isset($_POST['submit'])){
 
    }
    else
-   {
+   {  check_command();
       if(0)//(mysql_multi_query($conn, str_replace('<br>', '',$inputQuery)))
       {
          do{
@@ -83,8 +83,8 @@ if(isset($_POST['submit'])){
          //$search_result = mysqli_store_result($conn);
          $search_result = $conn->query($inputQuery);
          if(is_bool($search_result) and $search_result){
-            $operation = substr($inputQuery, 0, strpos($inputQuery, ''));
-            updateMessages('success', ucfirst($operation).'operation successfully executed.');
+            $operation = substr($inputQuery, 0, strpos($inputQuery, ' '));
+            updateMessages('success', ucfirst($operation).' operation successfully executed.');
          }  
    }
 
@@ -138,10 +138,25 @@ function updateMessages( $msgStatus, $msg){
 
       if($msg != ''){
 
-         $msgIndex != 1;
-         if($msgStatus == 'success'){array_push($successMsg, $msgIndex.'.'.$msg);}
+         $msgIndex += 1;
+         if($msgStatus == 'success'){array_push($successMsg, $msgIndex.'. '.$msg);}
          else{ array_push($errorMsg, $msgIndex.'. '.$msg);}
       }
+}
+
+function check_command(){
+   GLOBAL $inputQuery;
+   $command = array('');
+   $command = explode(' ', $inputQuery);
+   
+   if(strpos(strtolower('###'.$command[0]), 'add')){
+      $name = $command[1];
+      $S_ID = $command[2];
+      $Grad_Year = $command[3];
+      $Goal_Job = $command[4];
+      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job')";
+   }
+
 }
 ?>
 
@@ -151,13 +166,13 @@ function updateMessages( $msgStatus, $msg){
 <html>
 
    <head>
-      <title>R* Sandbox</title>
+      <title>UI Schedule Planner</title>
       <link href = 'style.css' rel = 'stylesheet'>
       </head>
 
       <body>
 
-         <h2>R8 Sandbox</h2>
+         <h2>UI Schedule</h2>
 
          <section class="block-of-text" style="display: none;">
             <button class="collapsible">See Example Usage</button>
@@ -223,7 +238,7 @@ function updateMessages( $msgStatus, $msg){
                   <fieldset>
                      <legend>Input</legend>
 
-                        <textarea class = "FormElement" name = "inputQuery" id = "input cols = "40
+                        <textarea class = "FormElement" name = "inputQuery" id = "input cols = "80
  rows = "10" placeholder = "Type Query Here"><?php echo $inputQuery; ?></textarea>
 
                         <br>
@@ -231,7 +246,7 @@ function updateMessages( $msgStatus, $msg){
                         <input type = "submit" id ="submit" name= "submit" value ="Submit" onclick = "return checkInput();">
 
                   </fieldset>
-               </selection>
+               </section>
             </form>
 
             <!--OUTPUT SECTION-->
@@ -273,7 +288,7 @@ function updateMessages( $msgStatus, $msg){
                               <?php endif?>
 
                            </fieldset>
-                        </selection>
+                        </section>
                      </form>
 
                      <section class = "block-of-text">
