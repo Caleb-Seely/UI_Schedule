@@ -6,6 +6,7 @@ $msgIndex = 0;
 $targetDB = '';
 $querytype = 'sql';
 $inputQuery = '';
+$full_input = array('');
 
 $tableName = '';
 $selection = '';
@@ -47,46 +48,54 @@ if(isset($_POST['submit'])){
 
    $inputQuery = trim($_POST['inputQuery']);
 
-   if(strpos(strtolower('###'.$inputQuery), 'create database')){
-      updateMessages('error', 'Database creation not allowed on this platform.');
-   }
-   else if(strpos(strtolower('###'.$inputQuery), 'drop database')){
-         updateMessages('error', 'Database deletion not allowed on this platform.');
+   $full_input = explode(';', $inputQuery);     //Change ; -> . for the public
+   $command_count = 0;
 
-   }
-   else
-   {  check_command();
-      if(0)//(mysql_multi_query($conn, str_replace('<br>', '',$inputQuery)))
-      {
-         do{
-            //check first result
-            if($result = mysqli_store_result()){
-               $search_result = $result; echo $inputQuery;
-               //free the result and move on to next query
-               mysqli_free_result($result); 
-            }
-            else{
-               updateMessages('error', $conn->error);
-            }
-
-            $success = mysqli_next_result($conn); echo $success;
-            if(!$success){
-               updateMessages('error', $conn->error);
-            }
-            else{
-               $search_result = mysqli_store_result($conn);
-            }
-         }
-         while($success);
+   do{
+      $inputQuery = $full_input[$command_count];
+      
+      if(strpos(strtolower('###'.$inputQuery), 'create database')){
+         updateMessages('error', 'Database creation not allowed on this platform.');
       }
+      else if(strpos(strtolower('###'.$inputQuery), 'drop database')){
+            updateMessages('error', 'Database deletion not allowed on this platform.');
 
-         //$search_result = mysqli_store_result($conn);
-         $search_result = $conn->query($inputQuery);
-         if(is_bool($search_result) and $search_result){
-            $operation = substr($inputQuery, 0, strpos($inputQuery, ' '));
-            updateMessages('success', ucfirst($operation).' operation successfully executed.');
-         }  
-   }
+      }
+      else
+      {  check_command();
+         if(0)//(mysql_multi_query($conn, str_replace('<br>', '',$inputQuery)))
+         {
+            do{
+               //check first result
+               if($result = mysqli_store_result()){
+                  $search_result = $result; echo $inputQuery;
+                  //free the result and move on to next query
+                  mysqli_free_result($result); 
+               }
+               else{
+                  updateMessages('error', $conn->error);
+               }
+
+               $success = mysqli_next_result($conn); echo $success;
+               if(!$success){
+                  updateMessages('error', $conn->error);
+               }
+               else{
+                  $search_result = mysqli_store_result($conn);
+               }
+            }
+            while($success);
+         }
+
+            //$search_result = mysqli_store_result($conn);
+            $search_result = $conn->query($inputQuery);
+            if(is_bool($search_result) and $search_result){
+               $operation = substr($inputQuery, 0, strpos($inputQuery, ' '));
+               updateMessages('success', ucfirst($operation).' operation successfully executed.');
+            }  
+      }
+      $command_count += 1;
+   } while(isset($full_input[$command_count]) );
 
    //retrieve colmn names to display in output table
 
@@ -148,13 +157,33 @@ function check_command(){
    GLOBAL $inputQuery;
    $command = array('');
    $command = explode(' ', $inputQuery);
-   
+   $name = "Blank";
+   $S_ID = "Blank";
+   $Grad_Year = "Blank";
+   $Goal_Job = "Blank";
+   $class_ID = "Blank";
+   $Level = "Blank";
+   $Industry = "ALL";
+
    if(strpos(strtolower('###'.$command[0]), 'add')){
-      $name = $command[1];
-      $S_ID = $command[2];
-      $Grad_Year = $command[3];
-      $Goal_Job = $command[4];
+      if(isset($command[1])){ $name = $command[1];}      //student name
+      if(isset($command[2])){ $S_ID = $command[2];}
+      if(isset($command[3])){ $Grad_Year = $command[3];}
+      if(isset($command[4])){ $Goal_Job = $command[4];}
       $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job')";
+   }
+   else if(strpos(strtolower('###'.$command[0]), 'taken')){
+         if(isset($command[1])){ $class_ID = $command[1];}      //Class name
+         if(isset($command[2])){ $S_ID = $command[2];}
+         $inputQuery = "Insert into cs_classes.classes_taken (S_ID, Class_ID)\nValues('$S_ID','$name')";
+   }
+   else if(strpos(strtolower('###'.$command[0]), 'class')){
+      if(isset($command[1])){ $name = $command[1];}      //student name
+      if(isset($command[2])){ $class_ID = $command[2];}
+      if(isset($command[3])){ $Industry = $command[3];}
+      if(isset($command[4])){ $Level = $command[4];}
+
+      $inputQuery = "Insert into cs_classes.class_list (class_ID, class_Name, Industry, Level)\nValues('$class_ID', '$name', '$Industry', '$Level')";
    }
 
 }
