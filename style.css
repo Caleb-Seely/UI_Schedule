@@ -16,7 +16,7 @@ h2{
 section { 
    display: block;
    background: white; 
-   margin: 0 auto lem; 
+   margin: 0 auto 1em; 
    height: relative; 
    max-width: 700px; 
    border-radius: .5em; 

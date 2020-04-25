@@ -238,7 +238,7 @@ function check_command(){
                   <fieldset>
                      <legend>Input</legend>
 
-                        <textarea class = "FormElement" name = "inputQuery" id = "input cols = "80
+                        <textarea class = "FormElement" name = "inputQuery" id = "input" cols = "40"
  rows = "10" placeholder = "Type Query Here"><?php echo $inputQuery; ?></textarea>
 
                         <br>
