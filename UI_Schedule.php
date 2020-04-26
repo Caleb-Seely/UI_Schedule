@@ -6,7 +6,8 @@ $msgIndex = 0;
 $targetDB = '';
 $querytype = 'sql';
 $inputQuery = '';
-$full_input = array('Input text here');
+$full_input = array('');
+$userInput = 'Input text here';
 $S_ID = 0;
 $current_ID = ($S_ID);
 
@@ -147,23 +148,24 @@ function updateMessages( $msgStatus, $msg){
 
 function check_command(){
    GLOBAL $inputQuery;
+   GLOBAL $S_ID;
+   GLOBAL $current_ID;
    $command = array('');
    $command = explode(' ', $inputQuery);
    $name = "Blank";
-   GLOBAL $S_ID;
-   GLOBAL $current_ID;
+   
    $Grad_Year = "Blank";
    $Goal_Job = "Blank";
    $class_ID = "Blank";
    $Level = "Blank";
    $Industry = "ALL";
 
-   if(strpos(strtolower('###'.$command[0]), 'add')){
+   if(strpos(strtolower('###'.$command[0]), 'add')){     //Add a user to the system
       if(isset($command[1])){ $name = $command[1];}      //student name
       if(isset($command[2])){ $S_ID = $command[2]; $current_ID = $S_ID;  }
       if(isset($command[3])){ $Grad_Year = $command[3];}
       if(isset($command[4])){ $Goal_Job = $command[4];}
-      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job');\nInsert into";
+      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job');";
       updateMessages('success' ,$name .' ID: '. $S_ID. ' Graduation: '. $Grad_Year .' Industry: '. $Goal_Job .' added.' );
    }
    else if(strpos(strtolower('###'.$command[0]), 'taken')){
@@ -178,13 +180,19 @@ function check_command(){
          $inputQuery = "Insert into cs_classes.classes_taken (S_ID, Class_ID)\nValues('$S_ID','$class_ID')";
          updateMessages('success', 'ID: '. $S_ID. ' has taken '. $class_ID);
    }
-   else if(strpos(strtolower('###'.$command[0]), 'class')){
-      if(isset($command[1])){ $name = $command[1];}      //student name
+   else if(strpos(strtolower('###'.$command[0]), 'class')){    //Setup function to fill the class Db
+      if(isset($command[1])){ $name = $command[1];}      //Class name
       if(isset($command[2])){ $class_ID = $command[2];}
       if(isset($command[3])){ $Industry = $command[3];}
       if(isset($command[4])){ $Level = $command[4];}
 
       $inputQuery = "Insert into cs_classes.class_list (class_ID, class_Name, Industry, Level)\nValues('$class_ID', '$name', '$Industry', '$Level')";
+   }
+   else if(strpos(strtolower('###'.$command[0]), 'find')){
+      if(isset($command[1])){$year = $command[1];}
+
+      $inputQuery = "Select class_Name FROM cs_classes.class_list, cs_classes.users where (users.Goal_Job = class_list.Industry or class_list.Industry = 'All') and users.S_ID = $current_ID";
+      echo $inputQuery;
    }
 
 }
@@ -250,11 +258,7 @@ function check_command(){
                      <legend>Input</legend>
 
                         <textarea class = "FormElement" name = "inputQuery" id = "input" cols = "40"
- rows = "10" placeholder = <?php  
-                              foreach($full_input as $value){
-                                 echo $value. " ";
-                              } 
-                           ?>></textarea>
+ rows = "10" placeholder = <?php echo $inputQuery; ?>></textarea>
 
                         <br>
 
@@ -281,19 +285,14 @@ function check_command(){
                               <?php if($search_result and !is_bool($search_result)): ?>
 
                                  <table>
-                                    <!---table header-->
-                                    <tr>
-                                       <?php foreach ($columns as $col):?>
-                                          <th><?php echo trim($col, ",");?></th>
-                                       <?php endforeach; ?>
-                                    </tr>
+                                    
 
                                     <!--populate table-->
                                     <?php if($search_result and $search_result != ''):?>
                                        <?php while($row = mysqli_fetch_array($search_result)):?>
                                           <tr>
                                              <?php foreach($columns as $col):?>
-                                                <td><?php echo $row[trim($col,",")];?></td>
+                                                <td><?php echo $row[0];?></td>
                                              <?php endforeach; ?>
                                           </tr>
                                        <?php endwhile;?>
