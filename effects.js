@@ -1,23 +1,6 @@
 function checkInput(){
-   var inputBox = document.getElementById("input");
-   var selectedOption = " ";//document.querySelector('input[name = "actions"]:checked').Value;
 
-   var inputText = "";//(inputBox.value).replace(/^\s+|\s+$/g, '');
-   var firstWord = ''; //inputText.substr(0, inputText.indexof(" "));
-
-   if(selectedOption.toLocaleLowerCase() == 'create' && !(firstWord.toLocaleLowerCase() == 'create')){
-      alert('Please enter a CREATE statement or change your selected query action.;');
-      return false;
-   }
-   else if (selectedOption.toLowerCase()=='update' && !(firstWord.toLocaleLowerCase() == 'update')){
-      alert('Please enter an UPDATE statement or change your selected query action.;');
-      return false;
-   }
-   else if (selectedOption.toLowerCase()=='query' && !(firstWord.toLocaleLowerCase() == 'create' || firstWord.toLowerCase() == 'update')){
-      alert('Please select the ' + firstWord.toUpperCase() + ' query option to enter this query.nn');
-      return false;
-   }
-   else return true;
+return true;
 }
 
 function hide_new_db(){
@@ -65,3 +48,4 @@ for(i = 0; i < coll.length; i++){
       }
    });
 }
+

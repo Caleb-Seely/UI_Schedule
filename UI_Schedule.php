@@ -6,7 +6,9 @@ $msgIndex = 0;
 $targetDB = '';
 $querytype = 'sql';
 $inputQuery = '';
-$full_input = array('');
+$full_input = array('Input text here');
+$S_ID = 0;
+$current_ID = ($S_ID);
 
 $tableName = '';
 $selection = '';
@@ -32,18 +34,8 @@ $dbname = "information_schema";
 // Button Actions
 
 if(isset($_POST['submit'])){
-   $selection = $_POST['sqldblist'];
-   if($selection !== 'Select Database'){$targetDB = $selection;}
-
-   
-   // create connection
-   $conn =  mysqli_connect($servername, $username, $password, $dbname);
-   // Check connection
-   if($conn->connect_error){
-      die($conn->connect_error);
-   }
-
-
+ 
+   $current_ID = $_POST["student_ID"];
    $search_result = NULL;
 
    $inputQuery = trim($_POST['inputQuery']);
@@ -158,7 +150,8 @@ function check_command(){
    $command = array('');
    $command = explode(' ', $inputQuery);
    $name = "Blank";
-   $S_ID = "Blank";
+   GLOBAL $S_ID;
+   GLOBAL $current_ID;
    $Grad_Year = "Blank";
    $Goal_Job = "Blank";
    $class_ID = "Blank";
@@ -167,15 +160,23 @@ function check_command(){
 
    if(strpos(strtolower('###'.$command[0]), 'add')){
       if(isset($command[1])){ $name = $command[1];}      //student name
-      if(isset($command[2])){ $S_ID = $command[2];}
+      if(isset($command[2])){ $S_ID = $command[2]; $current_ID = $S_ID;  }
       if(isset($command[3])){ $Grad_Year = $command[3];}
       if(isset($command[4])){ $Goal_Job = $command[4];}
-      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job')";
+      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job');\nInsert into";
+      updateMessages('success' ,$name .' ID: '. $S_ID. ' Graduation: '. $Grad_Year .' Industry: '. $Goal_Job .' added.' );
    }
    else if(strpos(strtolower('###'.$command[0]), 'taken')){
          if(isset($command[1])){ $class_ID = $command[1];}      //Class name
-         if(isset($command[2])){ $S_ID = $command[2];}
-         $inputQuery = "Insert into cs_classes.classes_taken (S_ID, Class_ID)\nValues('$S_ID','$name')";
+         //if(isset($command[2])){ $S_ID = $command[2];}
+         if($current_ID != 0){
+            $S_ID = $current_ID;
+         }
+         else{
+            updateMessages('fail', 'Please enter a valid student ID');
+         }
+         $inputQuery = "Insert into cs_classes.classes_taken (S_ID, Class_ID)\nValues('$S_ID','$class_ID')";
+         updateMessages('success', 'ID: '. $S_ID. ' has taken '. $class_ID);
    }
    else if(strpos(strtolower('###'.$command[0]), 'class')){
       if(isset($command[1])){ $name = $command[1];}      //student name
@@ -229,32 +230,13 @@ function check_command(){
 
             <section class = "block-of-text">
                <fieldset>
-                  <legend>Target Database</legend>
+                  <legend>Student ID</legend>
 
-                  <!---populate drop-down list--->
-                  <?php
-
-                  $list = 'option name = "sqldblist">Select Database</option>';
-
-                  //Extract list of all databases
-                  $q = 'show databases;';
-                  if($dblist = mysqli_query($conn, $q)){
-                     while($row = mysqli_fetch_array($dblist)){
-                        $val = $row['Database'];
-                        if(array_search($val, $defaultTables) === false) #exclude default mysql tables
-                        {
-                           $list .= '<option';
-                           $list .= $val == $targetDB ? ' selected = \'selected\'>':'>';
-                           $list .= $val.'</option>';
-                        }
-                     }
-                     mysqli_free_result($dblist);
-                  }
-                  ?>
-
-                  <select name = "sqldblist">
-                     <?php echo $list; ?>
-                  </select>
+                  <input type = "text" id="student_ID" name="student_ID" value =  
+                  <?php 
+                        echo $current_ID;
+                      
+                  ?> > </input>
 
                   <br>
 
@@ -268,7 +250,11 @@ function check_command(){
                      <legend>Input</legend>
 
                         <textarea class = "FormElement" name = "inputQuery" id = "input" cols = "40"
- rows = "10" placeholder = "Type Query Here"><?php echo $inputQuery; ?></textarea>
+ rows = "10" placeholder = <?php  
+                              foreach($full_input as $value){
+                                 echo $value. " ";
+                              } 
+                           ?>></textarea>
 
                         <br>
 
