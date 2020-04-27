@@ -48,10 +48,10 @@ if(isset($_POST['submit'])){
       $inputQuery = $full_input[$command_count];
       
       if(strpos(strtolower('###'.$inputQuery), 'create database')){
-         updateMessages('error', 'Database creation not allowed on this platform.');
+         //updateMessages('error', 'Database creation not allowed on this platform.');
       }
       else if(strpos(strtolower('###'.$inputQuery), 'drop database')){
-            updateMessages('error', 'Database deletion not allowed on this platform.');
+            //updateMessages('error', 'Database deletion not allowed on this platform.');
 
       }
       else
@@ -93,9 +93,9 @@ if(isset($_POST['submit'])){
    //retrieve colmn names to display in output table
 
    $col_names = '';
-   if(strpos(strtolower('###'.substr(trim($inputQuery), 0, 7)), 'select')){
+   if(strpos(strtolower('###'.substr(trim($inputQuery),0,7)), 'select')){
       preg_match('/(?<=select )(.*)(?= from)/', $inputQuery, $regexResults);
-      $col_names = $regexResults[0];
+      //$col_names = $regexResults[0];
    }
    if(strpos(strtolower('###'.substr(trim($inputQuery), 0, 7)), 'show')){
       $col_names = 'show';
@@ -150,10 +150,12 @@ function check_command(){
    GLOBAL $inputQuery;
    GLOBAL $S_ID;
    GLOBAL $current_ID;
+   Global $full_input;
    $command = array('');
    $command = explode(' ', $inputQuery);
    $name = "Blank";
    
+   $year = 1;
    $Grad_Year = "Blank";
    $Goal_Job = "Blank";
    $class_ID = "Blank";
@@ -189,11 +191,32 @@ function check_command(){
       $inputQuery = "Insert into cs_classes.class_list (class_ID, class_Name, Industry, Level)\nValues('$class_ID', '$name', '$Industry', '$Level')";
    }
    else if(strpos(strtolower('###'.$command[0]), 'find')){
-      if(isset($command[1])){$year = $command[1];}
+      if(strpos(strtolower('###'.$command[1]), 'freshman')){$year = 1;}
+      if(strpos(strtolower('###'.$command[1]), 'sophmore')){$year = 2;}
+      if(strpos(strtolower('###'.$command[1]), 'junior')){$year = 3;}
+      if(strpos(strtolower('###'.$command[1]), 'senior')){$year = 4;}
 
-      $inputQuery = "Select class_Name FROM cs_classes.class_list, cs_classes.users where (users.Goal_Job = class_list.Industry or class_list.Industry = 'All') and users.S_ID = $current_ID";
-      echo $inputQuery;
+      $inputQuery = "Select class_Name FROM cs_classes.class_list, cs_classes.users where (users.Goal_Job = class_list.Industry or class_list.Industry = 'All') and ($year = class_list.level) and users.S_ID = $current_ID";
    }
+   else if(strpos(strtolower('###'.$command[0]), 'update')){
+      if(strpos(strtolower('###'.$command[1]), 'year')){
+         if(isset($command[2])){$Grad_Year = $command[2];}
+         $inputQuery="Update cs_classes.users\nSet Grad_Year = '$Grad_Year'\nWhere S_ID = '$current_ID'";
+      }
+      else if(strpos(strtolower('###'.$command[1]), 'industry')){
+         if(isset($command[2])){$Goal_Job = $command[2];}
+         $inputQuery = "update cs_classes.users\nSet Goal_Job = '$Goal_Job'\nWhere S_ID = '$current_ID'";
+
+      }
+   }
+   else if(strpos(strtolower('###'.$command[0]), 'me')){
+      $inputQuery = "SELECT Name  FROM cs_classes.users WHERE S_ID = '563482'";
+      $full_input[1] = "SELECT S_ID,  FROM cs_classes.users WHERE S_ID = '563482'";
+      echo $inputQuery;
+      
+
+   }
+   
 
 }
 ?>
