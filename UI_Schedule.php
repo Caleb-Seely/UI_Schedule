@@ -16,7 +16,6 @@ $selection = '';
 
 $errorMsg = array('');
 $successMsg = array('');
-$defaultTables = ['information_schema', 'mysql', 'performace_schema', 'sakila', 'sys', 'world'];
 
 // Database Connection
 
@@ -24,7 +23,7 @@ $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "information_schema";
-
+$search_result = '';
    // create connection
    $conn =  mysqli_connect($servername, $username, $password, $dbname);
    // Check connection
@@ -37,11 +36,11 @@ $dbname = "information_schema";
 if(isset($_POST['submit'])){
  
    $current_ID = $_POST["student_ID"];
-   $search_result = NULL;
+   $search_result = '';
 
    $inputQuery = trim($_POST['inputQuery']);
 
-   $full_input = explode(';', $inputQuery);     //Change ; -> . for the public
+   $full_input = explode('.', $inputQuery);     //Change ; -> . for the public
    $command_count = 0;
 
    do{
@@ -66,12 +65,12 @@ if(isset($_POST['submit'])){
                   mysqli_free_result($result); 
                }
                else{
-                  updateMessages('error', $conn->error);
+                  //updateMessages('error', $conn->error);
                }
 
                $success = mysqli_next_result($conn); echo $success;
                if(!$success){
-                  updateMessages('error', $conn->error);
+                  //updateMessages('error', 'Database operation error');
                }
                else{
                   $search_result = mysqli_store_result($conn);
@@ -81,13 +80,16 @@ if(isset($_POST['submit'])){
          }
 
             //$search_result = mysqli_store_result($conn);
-            $search_result = $conn->query($inputQuery);
+
+            $search_result = $conn->query($inputQuery);     //Work horse 
+
             if(is_bool($search_result) and $search_result){
                $operation = substr($inputQuery, 0, strpos($inputQuery, ' '));
-               updateMessages('success', ucfirst($operation).' operation successfully executed.');
+               //updateMessages('success', ucfirst($operation).' operation successfully executed.');
             }  
       }
-      $command_count += 1;
+      $command_count = $command_count+1;
+      
    } while(isset($full_input[$command_count]) );
 
    //retrieve colmn names to display in output table
@@ -141,8 +143,8 @@ function updateMessages( $msgStatus, $msg){
       if($msg != ''){
 
          $msgIndex += 1;
-         if($msgStatus == 'success'){array_push($successMsg, $msgIndex.'. '.$msg);}
-         else{ array_push($errorMsg, $msgIndex.'. '.$msg);}
+         if($msgStatus == 'success'){array_push($successMsg, $msgIndex.' '.$msg);}
+         else{ array_push($errorMsg, $msgIndex.' '.$msg);}
       }
 }
 
@@ -157,7 +159,7 @@ function check_command(){
    
    $year = 1;
    $Grad_Year = "Blank";
-   $Goal_Job = "Blank";
+   $Goal = "Blank";
    $class_ID = "Blank";
    $Level = "Blank";
    $Industry = "ALL";
@@ -165,10 +167,11 @@ function check_command(){
    if(strpos(strtolower('###'.$command[0]), 'add')){     //Add a user to the system
       if(isset($command[1])){ $name = $command[1];}      //student name
       if(isset($command[2])){ $S_ID = $command[2]; $current_ID = $S_ID;  }
-      if(isset($command[3])){ $Grad_Year = $command[3];}
-      if(isset($command[4])){ $Goal_Job = $command[4];}
-      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Grad_Year, Goal_Job)\nValues('$name','$S_ID', '$Grad_Year', '$Goal_Job');";
-      updateMessages('success' ,$name .' ID: '. $S_ID. ' Graduation: '. $Grad_Year .' Industry: '. $Goal_Job .' added.' );
+      if(isset($command[3])){ $Goal = $command[3];}
+      
+      $full_input[1] = "taken tmp";
+      $inputQuery = "Insert into cs_classes.users (Name, S_ID, Goal)\nValues('$name','$S_ID', '$Goal'); ";
+      updateMessages('success' ,$name .' with the ID '. $S_ID.' and the target industry '. $Goal .' has been added.' );
    }
    else if(strpos(strtolower('###'.$command[0]), 'taken')){
          if(isset($command[1])){ $class_ID = $command[1];}      //Class name
@@ -180,7 +183,10 @@ function check_command(){
             updateMessages('fail', 'Please enter a valid student ID');
          }
          $inputQuery = "Insert into cs_classes.classes_taken (S_ID, Class_ID)\nValues('$S_ID','$class_ID')";
-         updateMessages('success', 'ID: '. $S_ID. ' has taken '. $class_ID);
+         if(!strpos(strtolower('###'.$class_ID), 'tmp')){
+            updateMessages('success', 'ID: '. $S_ID. ' has taken '. $class_ID);
+         }
+         
    }
    else if(strpos(strtolower('###'.$command[0]), 'class')){    //Setup function to fill the class Db
       if(isset($command[1])){ $name = $command[1];}      //Class name
@@ -192,11 +198,11 @@ function check_command(){
    }
    else if(strpos(strtolower('###'.$command[0]), 'find')){
       if(strpos(strtolower('###'.$command[1]), 'freshman')){$year = 1;}
-      if(strpos(strtolower('###'.$command[1]), 'sophmore')){$year = 2;}
+      if(strpos(strtolower('###'.$command[1]), 'sophomore')){$year = 2;}
       if(strpos(strtolower('###'.$command[1]), 'junior')){$year = 3;}
       if(strpos(strtolower('###'.$command[1]), 'senior')){$year = 4;}
 
-      $inputQuery = "Select class_Name FROM cs_classes.class_list, cs_classes.users where (users.Goal_Job = class_list.Industry or class_list.Industry = 'All') and ($year = class_list.level) and users.S_ID = $current_ID";
+      $inputQuery = "Select Distinct class_Name FROM cs_classes.class_list, cs_classes.users, cs_classes.classes_taken where (users.Goal = class_list.Industry or class_list.Industry = 'All') and ($year = class_list.level) and (classes_taken.S_ID = $current_ID and class_list.class_ID != classes_taken.class_ID)  and users.S_ID = $current_ID";
    }
    else if(strpos(strtolower('###'.$command[0]), 'update')){
       if(strpos(strtolower('###'.$command[1]), 'year')){
@@ -204,20 +210,23 @@ function check_command(){
          $inputQuery="Update cs_classes.users\nSet Grad_Year = '$Grad_Year'\nWhere S_ID = '$current_ID'";
       }
       else if(strpos(strtolower('###'.$command[1]), 'industry')){
-         if(isset($command[2])){$Goal_Job = $command[2];}
-         $inputQuery = "update cs_classes.users\nSet Goal_Job = '$Goal_Job'\nWhere S_ID = '$current_ID'";
+         if(isset($command[2])){$Goal = $command[2];}
+         $inputQuery = "update cs_classes.users\nSet Goal = '$Goal'\nWhere S_ID = '$current_ID'";
 
       }
    }
-   else if(strpos(strtolower('###'.$command[0]), 'me')){
-      $inputQuery = "SELECT Name  FROM cs_classes.users WHERE S_ID = '563482'";
-      $full_input[1] = "SELECT S_ID,  FROM cs_classes.users WHERE S_ID = '563482'";
+   else if(strpos(strtolower('###'.$command[0]), 'completed')){
+      $inputQuery = "Select class_Name from cs_classes.class_list, cs_classes.classes_taken where classes_taken.S_ID = $current_ID and class_list.class_ID =classes_taken.class_ID";
+   }
+   else {
+
       echo $inputQuery;
-      
+      $inputQuery = "SELECT class_Name FROM cs_classes.class_list ";
+      updateMessages('success', 'Nothing requested. Here is a full class list.');     
 
    }
    
-
+   //echo $inputQuery;
 }
 ?>
 
@@ -233,27 +242,9 @@ function check_command(){
 
       <body>
 
-         <h2>UI Schedule</h2>
+         <h2><b>UI Schedule Planner</b></h2>
 
-         <section class="block-of-text" style="display: none;">
-            <button class="collapsible">See Example Usage</button>
-            <div class="content">
-               <fieldset class = "side">
-                  <legend>Sample Database</legend>
 
-               </fieldset>
-
-               <fieldset class = "side">
-                  <legend>Sample Updates</legend>
-
-               </fieldset>
-
-               <fieldset class = "side">
-                  <legend>Sample UpdatQueries</legend>
-
-               </fieldset>
-            </div>
-         </section>
 
          <form action = "UI_Schedule.php" method = "post" id = "options">
 
@@ -261,10 +252,11 @@ function check_command(){
 
             <section class = "block-of-text">
                <fieldset>
-                  <legend>Student ID</legend>
+                  <legend><b>Student ID</b></legend>
 
-                  <input type = "text" id="student_ID" name="student_ID" value =  
+                  <input type = "text" id="student_ID" name="student_ID" placeholder = "Student ID here" value =  
                   <?php 
+                  if($current_ID != 0)
                         echo $current_ID;
                       
                   ?> > </input>
@@ -278,10 +270,10 @@ function check_command(){
 
             <section class = "block-of-text">
                   <fieldset>
-                     <legend>Input</legend>
+                     <legend><b>Command</b></legend>
 
-                        <textarea class = "FormElement" name = "inputQuery" id = "input" cols = "40"
- rows = "10" placeholder = <?php echo $inputQuery; ?>></textarea>
+                        <textarea class = "FormElement" name = "inputQuery" id = "input" cols = "80"
+ rows = "10" placeholder = "Enter command here."></textarea>
 
                         <br>
 
@@ -296,7 +288,7 @@ function check_command(){
 
                   <section class = "block-of-text">
                      <fieldset>
-                        <legend>Output</legend>
+                        <legend><b>Output</b></legend>
 
                            <?php $messages = array_merge($successMsg, $errorMsg); asort($messages); ?>
                               <?php foreach($messages as $msg):?>
@@ -329,12 +321,29 @@ function check_command(){
                      </form>
 
                      <section class = "block-of-text">
+                     <fieldset>
+                           <legend><b>Instructions</b></legend>
+                           Words in all caps are user dependent.</br>
+                           -To add a user: Add NAME STUDENT_ID INDUSTRY</br><b>Industry options are:</b> Security, Games, Software, Hardware or Data.<br>
+                           -To request your class list: Find Freshman | Find Sophomore | Find Junior | Find Senior </br>
+                           -To change industry: Update industry INDUSTRY.<br>
+                           -To add classes already taken: Taken CS_120 | CS___ depending on the class.</br>   
+                           -For a full list of classes already completed: Completed.</br>
+                           A blank submission will result in a full CS class list as of Spring 2020.                    
+                        </fieldset>
+                     </section>
+
+                     <section class = "block-of-text">
                         <a href="UI_Schedule.php"><input type = "submit" name = "reset" value = "Reset Page"/></a>
                      </section>
 
                      <?php $conn->close(); ?>
 
                      <script src = "effects.js"></script>
+
+                     
+                     
+                        
 
                   </body>
                </html>
