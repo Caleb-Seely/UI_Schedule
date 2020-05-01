@@ -10,6 +10,7 @@ $full_input = array('');
 $userInput = 'Input text here';
 $S_ID = 0;
 $current_ID = ($S_ID);
+$nom_col =1;
 
 $tableName = '';
 $selection = '';
@@ -121,7 +122,7 @@ if(isset($_POST['submit'])){
       if($result = mysqli_query($conn, $q)){
          // Get field information for all fields
          while($fieldinfo = mysqli_fetch_field($result)){
-            $col_names .= $fieldinfo->name.'';
+            $col_names .= $fieldinfo->name.' ';
          }
          // Free result set
          mysqli_free_result($result);
@@ -153,6 +154,7 @@ function check_command(){
    GLOBAL $S_ID;
    GLOBAL $current_ID;
    Global $full_input;
+   GLOBAL $num_col;
    $command = array('');
    $command = explode(' ', $inputQuery);
    $name = "Blank";
@@ -169,9 +171,9 @@ function check_command(){
       if(isset($command[2])){ $S_ID = $command[2]; $current_ID = $S_ID;  }
       if(isset($command[3])){ $Goal = $command[3];}
       
-      $full_input[1] = "taken tmp";
+      $full_input[1] = "taken None";
       $inputQuery = "Insert into cs_classes.users (Name, S_ID, Goal)\nValues('$name','$S_ID', '$Goal'); ";
-      updateMessages('success' ,$name .' with the ID '. $S_ID.' and the target industry '. $Goal .' has been added.' );
+      updateMessages('success' ,$name .' with the ID '. $S_ID.' and the target industry  '. $Goal .' has been added.' );
    }
    else if(strpos(strtolower('###'.$command[0]), 'taken')){
          if(isset($command[1])){ $class_ID = $command[1];}      //Class name
@@ -188,21 +190,54 @@ function check_command(){
          }
          
    }
-   else if(strpos(strtolower('###'.$command[0]), 'class')){    //Setup function to fill the class Db
-      if(isset($command[1])){ $name = $command[1];}      //Class name
-      if(isset($command[2])){ $class_ID = $command[2];}
-      if(isset($command[3])){ $Industry = $command[3];}
-      if(isset($command[4])){ $Level = $command[4];}
-
-      $inputQuery = "Insert into cs_classes.class_list (class_ID, class_Name, Industry, Level)\nValues('$class_ID', '$name', '$Industry', '$Level')";
-   }
    else if(strpos(strtolower('###'.$command[0]), 'find')){
       if(strpos(strtolower('###'.$command[1]), 'freshman')){$year = 1;}
       if(strpos(strtolower('###'.$command[1]), 'sophomore')){$year = 2;}
       if(strpos(strtolower('###'.$command[1]), 'junior')){$year = 3;}
       if(strpos(strtolower('###'.$command[1]), 'senior')){$year = 4;}
 
-      $inputQuery = "Select Distinct class_Name FROM cs_classes.class_list, cs_classes.users, cs_classes.classes_taken where (users.Goal = class_list.Industry or class_list.Industry = 'All') and ($year = class_list.level) and (classes_taken.S_ID = $current_ID and class_list.class_ID != classes_taken.class_ID)  and users.S_ID = $current_ID";
+      $inputQuery = "
+      
+      Select Distinct class_list.class_ID, class_name
+      From cs_classes.class_list, cs_classes.users, cs_classes.classes_taken 
+      
+            
+      where 
+    
+      class_list.PreReq in (   Select Distinct class_list.class_ID                              
+                                    FROM cs_classes.class_list, cs_classes.users, cs_classes.classes_taken 
+                                    where (classes_taken.S_ID = $current_ID and 
+                                          (class_list.class_ID = classes_taken.class_ID ) 
+                                          )
+                                 ) 
+                                 and ( (class_list.Industry = users.Goal and users.S_ID = $current_ID and class_list.level <= $year) or class_list.Industry = 'All'  
+                                 and class_list.class_ID not in (                                                                      
+                                                                     Select Distinct class_list.class_ID
+                                                                     From cs_classes.class_list, cs_classes.users, cs_classes.classes_taken 
+                                                                     Where (classes_taken.S_ID = $current_ID and 
+                                                                           (class_list.class_ID = classes_taken.class_ID ) 
+                                                                           )
+                                                               ) and class_list.level <= $year
+                                 )
+                                 
+      or 
+                                 
+      class_list.class_ID not in (   Select Distinct classes_taken.class_ID 
+                                       FROM cs_classes.class_list, cs_classes.users, cs_classes.classes_taken 
+                                       where (classes_taken.S_ID = $current_ID and 
+                                                (class_list.class_ID = classes_taken.class_ID ) 
+                                             )
+                                 ) 
+                                 and class_list.PreReq = 'None' and class_list.level <= $year and ((class_list.Industry = users.Goal and users.S_ID = $current_ID) or class_list.Industry = 'All') 
+       
+      
+                               
+                                 
+      ";
+
+
+      updateMessages('success','Searching for '.$command[1].' year classes' );
+      $num_col = 2;
    }
    else if(strpos(strtolower('###'.$command[0]), 'update')){
       if(strpos(strtolower('###'.$command[1]), 'year')){
@@ -216,12 +251,13 @@ function check_command(){
       }
    }
    else if(strpos(strtolower('###'.$command[0]), 'completed')){
-      $inputQuery = "Select class_Name from cs_classes.class_list, cs_classes.classes_taken where classes_taken.S_ID = $current_ID and class_list.class_ID =classes_taken.class_ID";
+      $inputQuery = "Select Distinct class_Name, class_list.class_ID from cs_classes.class_list, cs_classes.classes_taken where classes_taken.S_ID = $current_ID and class_list.class_ID =classes_taken.class_ID";
+      $num_col = 2;
    }
    else {
 
       echo $inputQuery;
-      $inputQuery = "SELECT class_Name FROM cs_classes.class_list ";
+      $inputQuery = "SELECT class_Name, class_ID FROM cs_classes.class_list ";
       updateMessages('success', 'Nothing requested. Here is a full class list.');     
 
    }
@@ -300,15 +336,21 @@ function check_command(){
                               <?php if($search_result and !is_bool($search_result)): ?>
 
                                  <table>
+                                       
                                     
 
                                     <!--populate table-->
                                     <?php if($search_result and $search_result != ''):?>
+                                       <?php $x = 0 ?>
                                        <?php while($row = mysqli_fetch_array($search_result)):?>
                                           <tr>
+                                             
                                              <?php foreach($columns as $col):?>
-                                                <td><?php echo $row[0];?></td>
+                                                <td><?php echo $row[0]?></td>
+                                                <td><?php if($num_col >=2){ echo $row[1];}?></td>
+                                                <td><?php if($num_col >=3){ echo $row[2];}?></td>
                                              <?php endforeach; ?>
+                                             
                                           </tr>
                                        <?php endwhile;?>
                                     <?php endif?>
@@ -323,12 +365,13 @@ function check_command(){
                      <section class = "block-of-text">
                      <fieldset>
                            <legend><b>Instructions</b></legend>
-                           Words in all caps are user dependent.</br>
-                           -To add a user: Add NAME STUDENT_ID INDUSTRY</br><b>Industry options are:</b> Security, Games, Software, Hardware or Data.<br>
-                           -To request your class list: Find Freshman | Find Sophomore | Find Junior | Find Senior </br>
-                           -To change industry: Update industry INDUSTRY.<br>
-                           -To add classes already taken: Taken CS_120 | CS___ depending on the class.</br>   
-                           -For a full list of classes already completed: Completed.</br>
+                           * Words in all caps are user dependent.</br>
+                           -To <b>add a user</b>: Add NAME STUDENT_ID INDUSTRY</br>
+                           -To <b>request class list</b>: Find Freshman | Find Sophomore | Find Junior | Find Senior </br>
+                           -To <b>change industry</b>: Update industry INDUSTRY.<br>
+                           -To <b>add classes already taken</b>: Taken CS_120 | CS___ depending on the class.</br>   
+                           -For <b>classes already completed</b>: Completed.</br>
+                           <b>Industry options are:</b> Security, Games, Software, Hardware or Data.<br>
                            A blank submission will result in a full CS class list as of Spring 2020.                    
                         </fieldset>
                      </section>
